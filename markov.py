@@ -11,7 +11,7 @@ class MarkovChain:
 	def update(self, data):
 		previous_word, current_word = "", ""
 		for char in data:
-			if char == ' ' or char == '\n':
+			if char == ' ':
 				if previous_word:
 					self.transition_dict[previous_word] += [current_word]
 				previous_word, current_word = current_word, ""
@@ -23,6 +23,10 @@ class MarkovChain:
 				if previous_word:
 					self.transition_dict[previous_word] += [current_word]
 				previous_word, current_word = current_word, ','
+			elif char == '\n' and previous_word:
+				if previous_word:
+					self.transition_dict[previous_word] += [current_word]
+				previous_word, current_word = current_word, '\n'
 			else:
 				current_word += char
 		self.transition_dict[previous_word] += [current_word]
