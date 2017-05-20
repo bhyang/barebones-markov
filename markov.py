@@ -1,20 +1,19 @@
-import sys, random
+import random, argparse
 from collections import defaultdict
 
 # default char-markov
 class MarkovChain:
 
-	def __init__(self, n):
+	def __init__(self, n=1):
 		self.transition_dict = defaultdict(lambda: [])
 		self.state = ""
-		self.state_size = n    # state_size is just the number of values in each state
+		self.state_size = n
 
 	# Updates transition matrix with new data
 	def update(self, data):
 		tupled_data = self.tupleify(data)
 		for c in range(len(tupled_data)):
 			self.transition_dict[tupled_data[c][0]].append(tupled_data[c][1])
-		# print(self.transition_dict)
 
 	# Returns a list of 2-tuples, where the first element is the state and the second is the rest
 	def tupleify(self, data):
@@ -23,7 +22,6 @@ class MarkovChain:
 		for i in range(len(data) - self.state_size):
 			chunk = ''.join([data[n] for n in range(i, i + self.state_size + 1)])
 			tuplified.append((' '.join([data[n] for n in range(i, i + self.state_size)]), data[i + self.state_size]))
-		# print(tuplified)
 		return tuplified
 
 	# Predicts next word based on current state
@@ -43,43 +41,6 @@ class MarkovChain:
 		for _ in range(length):
 			return_seq += self.next()
 		return return_seq
-
-	# # Updates transition matrix with new data
-	# def update(self, data):
-	# 	previous_word, current_word = "", ""
-	# 	for char in data:
-	# 		if char == ' ':
-	# 			if previous_word:
-	# 				self.transition_dict[previous_word] += [current_word]
-	# 			previous_word, current_word = current_word, ""
-	# 		elif char == '.' and previous_word:
-	# 			if previous_word:
-	# 				self.transition_dict[previous_word] += [current_word]
-	# 			previous_word, current_word = current_word, '.'
-	# 		elif char == ',' and previous_word:
-	# 			if previous_word:
-	# 				self.transition_dict[previous_word] += [current_word]
-	# 			previous_word, current_word = current_word, ','
-	# 		elif char == '\n' and previous_word:
-	# 			if previous_word:
-	# 				self.transition_dict[previous_word] += [current_word]
-	# 			previous_word, current_word = current_word, '\n'
-	# 		else:
-	# 			current_word += char
-	# 	self.transition_dict[previous_word] += [current_word]
-
-
-
-	# # Generates a sequence of arbitrary length, uses basic sentence syntax
-	# def generate(self, length=100, prompt=""):
-	# 	self.state = "."
-	# 	sentence = prompt
-	# 	for _ in range(length):
-	# 		next_word = self.next()
-	# 		if next_word != "." and next_word != "," and sentence != "":
-	# 			sentence += " "
-	# 		sentence += next_word
-	# 	return sentence
 
 punctuation = ['.', ',', '\n', '\"']
 
@@ -102,7 +63,6 @@ class WordMarkovChain(MarkovChain):
 			else:
 				current_word += data[c]
 		word_list += current_word
-		# print(word_list)
 		return MarkovChain.tupleify(self, word_list)
 
 	# Generates a sequence of arbitrary length
@@ -119,9 +79,37 @@ class WordMarkovChain(MarkovChain):
 		return return_seq
 
 # Constructs Markov chain from command-line arguments
-markov = WordMarkovChain(2)
-for src in sys.argv[1:]:
-	markov.update(open(src).read())
+
+# Defaults
+state_size = 1
+word_based = True
+output_length = 100
+input_src = "data/swift.txt"
+prompt = ""
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--state_size", type=int, help="Size of each state, measured in either words or characters based on type")
+parser.add_argument("--word_based", type=int, help="Construct Markov chain using words instead of characters")
+parser.add_argument("--output_length", type=int, help="Length of generated output, measured in either words of characters based on type")
+parser.add_argument("--input_src", type=str, help="Path of input file (must be .txt)")
+parser.add_argument("--prompt", type=str, help="User-determined starting state for the Markov chain")
+args = parser.parse_args()
+
+if args.state_size:
+	state_size = args.state_size
+if args.word_based != None:
+	word_based = args.word_based
+if args.output_length:
+	output_length = args.output_length
+if args.input_src:
+	input_src = args.input_src
+if args.prompt:
+	prompt = args.prompt
+
+markov = MarkovChain(state_size)
+if word_based:
+	markov = WordMarkovChain(state_size)
+markov.update(open(input_src).read())
 
 # Generate stuff
-print(markov.generate())
+print(markov.generate(length=output_length, prompt=prompt))
