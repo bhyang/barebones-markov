@@ -79,37 +79,19 @@ class WordMarkovChain(MarkovChain):
 		return return_seq
 
 # Constructs Markov chain from command-line arguments
-
-# Defaults
-state_size = 1
-word_based = True
-output_length = 100
-input_src = "data/swift.txt"
-prompt = ""
-
 parser = argparse.ArgumentParser()
-parser.add_argument("--state_size", type=int, help="Size of each state, measured in either words or characters based on type")
-parser.add_argument("--word_based", type=int, help="Construct Markov chain using words instead of characters")
-parser.add_argument("--output_length", type=int, help="Length of generated output, measured in either words of characters based on type")
-parser.add_argument("--input_src", type=str, help="Path of input file (must be .txt)")
-parser.add_argument("--prompt", type=str, help="User-determined starting state for the Markov chain")
+parser.add_argument("--state_size", default=1, type=int, help="Size of each state, measured in either words or characters based on type")
+parser.add_argument("--word_based", default=1, type=int, help="Construct Markov chain using words instead of characters")
+parser.add_argument("--output_length", default=100, type=int, help="Length of generated output, measured in either words of characters based on type")
+parser.add_argument("--input_src", nargs="+", default="data/swift.txt", type=str, help="Path of input file (must be .txt)")
+parser.add_argument("--prompt", default="", type=str, help="User-determined starting state for the Markov chain")
 args = parser.parse_args()
 
-if args.state_size:
-	state_size = args.state_size
-if args.word_based != None:
-	word_based = args.word_based
-if args.output_length:
-	output_length = args.output_length
-if args.input_src:
-	input_src = args.input_src
-if args.prompt:
-	prompt = args.prompt
-
-markov = MarkovChain(state_size)
-if word_based:
-	markov = WordMarkovChain(state_size)
-markov.update(open(input_src).read())
+markov = MarkovChain(args.state_size)
+if args.word_based:
+	markov = WordMarkovChain(args.state_size)
+for src in args.input_src:
+	markov.update(open(src).read())
 
 # Generate stuff
-print(markov.generate(length=output_length, prompt=prompt))
+print(markov.generate(length=args.output_length, prompt=args.prompt))
