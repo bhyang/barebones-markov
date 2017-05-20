@@ -16,3 +16,4 @@ The implementation is only around 60 lines long and most of that is just hard-co
 * Character-by-character Markov chain
 * Allow prompting
 * Cleaner grammar handling
+* README is outdated, will probably update when I finish building in the command-line functionality that I want
