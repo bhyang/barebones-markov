@@ -4,7 +4,7 @@ from collections import defaultdict
 # default char-markov
 class MarkovChain:
 
-	def __init__(self, n=1):
+	def __init__(self, n):
 		self.transition_dict = defaultdict(lambda: [])
 		self.state = ""
 		self.state_size = n
@@ -21,7 +21,7 @@ class MarkovChain:
 		tuplified = []
 		for i in range(len(data) - self.state_size):
 			chunk = ''.join([data[n] for n in range(i, i + self.state_size + 1)])
-			tuplified.append((' '.join([data[n] for n in range(i, i + self.state_size)]), data[i + self.state_size]))
+			tuplified.append((''.join([data[n] for n in range(i, i + self.state_size)]), data[i + self.state_size]))
 		return tuplified
 
 	# Predicts next word based on current state
@@ -35,10 +35,14 @@ class MarkovChain:
 		return self.state
 
 	# Generates a sequence of arbitrary length
-	def generate(self, length=100, prompt=""):
-		self.state = prompt
-		return_seq = ""
-		for _ in range(length):
+	def generate(self, length, prompt):
+		assert length > len(prompt), "Prompt can't be longer than output_length"
+		if self.state_size < len(prompt):	# If the prompt is too small, randomly pick from all states that contain the prompt
+			self.state = random.choice([state for state in self.transition_dict if prompt in state] or self.transition_dict)
+		else:
+			self.state = prompt[-self.state_size:]
+		return_seq = prompt
+		for _ in range(length - len(prompt)):
 			return_seq += self.next()
 		return return_seq
 
@@ -47,7 +51,7 @@ punctuation = ['.', ',', '\n', '\"']
 class WordMarkovChain(MarkovChain):
 
 	def tupleify(self, data):
-		# Turn data into list of words, then call parent
+		assert self.state_size < len(data), "state_size exceeds the total length of the data"
 		word_list = []
 		current_word = ""
 		for c in range(len(data)):
@@ -63,10 +67,15 @@ class WordMarkovChain(MarkovChain):
 			else:
 				current_word += data[c]
 		word_list += current_word
-		return MarkovChain.tupleify(self, word_list)
+
+		tuplified = []
+		for i in range(len(word_list) - self.state_size):
+			chunk = ''.join([word_list[n] for n in range(i, i + self.state_size + 1)])
+			tuplified.append((' '.join([word_list[n] for n in range(i, i + self.state_size)]), word_list[i + self.state_size]))
+		return tuplified
 
 	# Generates a sequence of arbitrary length
-	def generate(self, length=500, prompt=""):
+	def generate(self, length, prompt):
 		self.state = prompt
 		return_seq = ""
 		for _ in range(length):
@@ -90,8 +99,11 @@ args = parser.parse_args()
 markov = MarkovChain(args.state_size)
 if args.word_based:
 	markov = WordMarkovChain(args.state_size)
-for src in args.input_src:
-	markov.update(open(src).read())
+if type(args.input_src) == str:
+	markov.update(open(args.input_src).read())
+else:
+	for src in args.input_src:
+		markov.update(open(src).read())
 
 # Generate stuff
 print(markov.generate(length=args.output_length, prompt=args.prompt))
